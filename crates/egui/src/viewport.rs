@@ -321,6 +321,7 @@ pub struct ViewportBuilder {
     // windows:
     pub drag_and_drop: Option<bool>,
     pub taskbar: Option<bool>,
+    pub no_redirection_bitmap: Option<bool>,
 
     pub close_button: Option<bool>,
     pub minimize_button: Option<bool>,
@@ -421,6 +422,9 @@ impl ViewportBuilder {
     /// ## Platform-specific
     ///
     /// **macOS:** When using this feature to create an overlay-like UI, you likely want to combine this with [`Self::with_has_shadow`] set to `false` in order to avoid ghosting artifacts.
+    ///
+    /// **Windows:** With `wgpu` on DX12, also set [`Self::with_no_redirection_bitmap`],
+    /// or see-through pixels show white instead of the desktop.
     #[inline]
     pub fn with_transparent(mut self, transparent: bool) -> Self {
         self.transparent = Some(transparent);
@@ -519,6 +523,21 @@ impl ViewportBuilder {
     #[inline]
     pub fn with_taskbar(mut self, show: bool) -> Self {
         self.taskbar = Some(show);
+        self
+    }
+
+    /// windows: Sets `WS_EX_NOREDIRECTIONBITMAP`, so the window has no bitmap of its own.
+    ///
+    /// Needed for a transparent window drawn with `wgpu` on DX12
+    /// (`Dx12SwapchainKind::DxgiFromVisual`). Without it, see-through pixels
+    /// show a white window bitmap instead of the desktop.
+    ///
+    /// Do not set this for windows drawn with OpenGL (`glow`): they draw into that bitmap.
+    ///
+    /// Only applied when the window is created. The default is `false`.
+    #[inline]
+    pub fn with_no_redirection_bitmap(mut self, value: bool) -> Self {
+        self.no_redirection_bitmap = Some(value);
         self
     }
 
@@ -742,6 +761,7 @@ impl ViewportBuilder {
             window_level: new_window_level,
             mouse_passthrough: new_mouse_passthrough,
             taskbar: new_taskbar,
+            no_redirection_bitmap: new_no_redirection_bitmap,
             window_type: new_window_type,
             override_redirect: new_override_redirect,
             monitor: new_monitor,
@@ -915,6 +935,13 @@ impl ViewportBuilder {
 
         if new_taskbar.is_some() && self.taskbar != new_taskbar {
             self.taskbar = new_taskbar;
+            recreate_window = true;
+        }
+
+        if new_no_redirection_bitmap.is_some()
+            && self.no_redirection_bitmap != new_no_redirection_bitmap
+        {
+            self.no_redirection_bitmap = new_no_redirection_bitmap;
             recreate_window = true;
         }
 

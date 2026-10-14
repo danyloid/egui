@@ -2002,6 +2002,7 @@ pub fn create_winit_window_attributes(
         // Windows:
         drag_and_drop: _drag_and_drop,
         taskbar: _taskbar,
+        no_redirection_bitmap: _no_redirection_bitmap,
 
         // wayland:
         app_id: _app_id,
@@ -2142,6 +2143,9 @@ pub fn create_winit_window_attributes(
         }
         if let Some(show) = _taskbar {
             window_attributes = window_attributes.with_skip_taskbar(!show);
+        }
+        if let Some(value) = _no_redirection_bitmap {
+            window_attributes = window_attributes.with_no_redirection_bitmap(value);
         }
         window_attributes = window_attributes.with_undecorated_shadow(!decorations.unwrap_or(true));
     }
